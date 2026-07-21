@@ -121,7 +121,10 @@ function backtrack(dp: number[][], a: string[], b: string[]): RawDiff[] {
   let i = a.length, j = b.length;
 
   while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i - 1].toLowerCase() === b[j - 1].toLowerCase()) {
+    if (i > 0 && j > 0 && a[i - 1].toLowerCase() === b[j - 1].toLowerCase() && dp[i][j] > dp[i - 1][j]) {
+      // Only match if it strictly increases the LCS from the previous row.
+      // This forces the algorithm to match the EARLIEST occurrence of a word in the reference text,
+      // which is critical for paragraphs that contain repeating sentences.
       diff.push({ ref: a[i - 1], typed: b[j - 1], status: 'match' });
       i--; j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
