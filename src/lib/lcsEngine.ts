@@ -486,18 +486,6 @@ export class LCSEngine {
         }
       }
 
-      // ── Punctuation-only differences → half mistakes ─────────────────────
-      if (!isTrailing) {
-        // Pair del_punct and ins_punct position-by-position:
-        //   same count, different token = substitution (1 half mistake each)
-        //   net excess in either direction = missing/extra (1 half mistake each)
-        const nPairs = Math.min(delPunct.length, insPunct.length);
-        const nSubst = Array.from({ length: nPairs }, (_, k) => (delPunct[k] !== insPunct[k] ? 1 : 0) as number)
-          .reduce((a: number, b: number) => a + b, 0);
-        const nNet = Math.abs(delPunct.length - insPunct.length);
-        halfMistakes += (nSubst + nNet);
-      }
-
       // ── Word-level errors ────────────────────────────────────────────────
       const normalDel: string[] = [];
       for (const info of delWordsBInfo) {
@@ -507,6 +495,22 @@ export class LCSEngine {
       const normalIns: string[] = [];
       for (const info of insWordsBInfo) {
         normalIns.push(info.word);
+      }
+
+      // ── Punctuation-only differences → half mistakes ─────────────────────
+      // Only count punctuation half-errors when there were TYPED words in the block
+      // (substitution / addition case). Pure omissions should NOT generate punctuation
+      // half-errors — the words were never typed, so the punctuation was never typed either.
+      const hasPureOmission = normalDel.length > 0 && insBlock.length === 0;
+      if (!isTrailing && !hasPureOmission) {
+        // Pair del_punct and ins_punct position-by-position:
+        //   same count, different token = substitution (1 half mistake each)
+        //   net excess in either direction = missing/extra (1 half mistake each)
+        const nPairs = Math.min(delPunct.length, insPunct.length);
+        const nSubst = Array.from({ length: nPairs }, (_, k) => (delPunct[k] !== insPunct[k] ? 1 : 0) as number)
+          .reduce((a: number, b: number) => a + b, 0);
+        const nNet = Math.abs(delPunct.length - insPunct.length);
+        halfMistakes += (nSubst + nNet);
       }
 
       let errors: any[] = [];
@@ -536,8 +540,9 @@ export class LCSEngine {
         if (diff[k].status === 'delete') {
           const refToken = diff[k].ref!;
           if (PUNCT_TOKENS.has(refToken)) {
-            // Punctuation
-            if (!isTrailing) {
+            // Punctuation in a pure omission block → not_typed (no penalty).
+            // Half error only if there were typed words in this block (substitution/addition).
+            if (!isTrailing && !hasPureOmission) {
               htmlParts.push({ token: refToken, html: halfErrorSpan(refToken, null, 'punctuation') });
               diffTokens.push({ ref: refToken, typed: null, status: 'half_error', errorType: 'punctuation' });
             } else {
