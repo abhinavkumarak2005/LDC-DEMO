@@ -20,19 +20,17 @@ export default function App() {
 
   const [wordCount, setWordCount] = useState(0);
   const [wpm, setWpm] = useState(0);
-  const [referenceHTML, setReferenceHTML] = useState('Loading...');
 
   const engineRef = useRef<LCSEngine | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const refContainerRef = useRef<HTMLDivElement>(null);
 
   const currentPassage = passages.find(p => p.id === selectedPassageId) || passages[0];
 
   // Initialize engine when starting typing
   useEffect(() => {
     if (appState === 'typing' && !engineRef.current) {
-      const eng = new LCSEngine(currentPassage.text);
-      engineRef.current = eng;
-      setReferenceHTML(eng.buildInitialHTML());
+      engineRef.current = new LCSEngine(currentPassage.text);
     }
   }, [appState, currentPassage.text]);
 
@@ -47,29 +45,29 @@ export default function App() {
     return () => clearInterval(timer);
   }, [appState, timeLeft]);
 
-  // Focus + auto-scroll reference text as user types
+  // Focus textarea on typing start
   useEffect(() => {
     if (appState === 'typing') {
       textAreaRef.current?.focus();
-      const container = document.getElementById('ref-container');
-      if (container) {
-        const firstUntyped = container.querySelector('.opacity-50') as HTMLElement | null;
-        if (firstUntyped) {
-          container.scrollTo({
-            top: firstUntyped.offsetTop - container.offsetTop - container.offsetHeight / 2,
-            behavior: 'smooth',
-          });
-        }
-      }
     }
-  }, [appState, referenceHTML]);
+  }, [appState]);
+
+  // Auto-scroll reference panel based on typed word proportion (no colors shown)
+  useEffect(() => {
+    if (appState === 'typing' && refContainerRef.current) {
+      const container = refContainerRef.current;
+      const totalWords = engineRef.current?.referenceWords.length || 1;
+      const ratio = wordCount / totalWords;
+      const targetScroll = ratio * (container.scrollHeight - container.clientHeight);
+      container.scrollTo({ top: Math.max(0, targetScroll - 60), behavior: 'smooth' });
+    }
+  }, [appState, wordCount]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setTypedText(val);
     if (engineRef.current) {
       const res = engineRef.current.evaluate(val, false);
-      setReferenceHTML(res.highlightedHTML);
       setWordCount(res.totalTyped);
       setWpm(engineRef.current.getWPM());
     }
@@ -105,30 +103,27 @@ export default function App() {
       <div className="min-h-screen bg-background p-4 md:p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto w-full space-y-6">
 
-          {/* Header with logos */}
-          <div className="flex justify-between items-start w-full mb-6">
-            <img src="/logo.png" alt="Logo" className="h-24 w-auto object-contain" />
-            <div className="text-center space-y-1 flex-1 px-4">
-              <h1 className="text-4xl font-bold text-black">Puducherry Examining Authority</h1>
-              <h2 className="text-xl font-semibold text-foreground">Combined Higher Secondary Level Exam 2025</h2>
-              <h3 className="text-xl font-semibold text-foreground">Typing Speed Test on Computer for the Post of Lower Division Clerk</h3>
-              <p className="text-xl font-semibold text-foreground">Practice questions</p>
-            </div>
-            <img src="/logo.png" alt="Logo" className="h-24 w-auto object-contain" />
+          {/* Header — logo centered above title */}
+          <div className="flex flex-col items-center text-center space-y-2 mb-6">
+            <img src="/logo.png" alt="Logo" className="h-24 w-auto object-contain mb-2" />
+            <h1 className="text-4xl font-bold text-black">Puducherry Examining Authority</h1>
+            <h2 className="text-xl font-semibold text-foreground">Combined Higher Secondary Level Exam 2025</h2>
+            <h3 className="text-xl font-semibold text-foreground">Typing Speed Test on Computer for the Post of Lower Division Clerk</h3>
+            <p className="text-xl font-semibold text-foreground">Practice questions</p>
           </div>
 
-          {/* Qualifying Criteria — errors only */}
+          {/* Qualifying Criteria */}
           <Card className="shadow-lg border-2 border-primary/20">
             <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
               <CardTitle className="text-xl text-primary">Qualifying Criteria</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="bg-secondary/50 p-4 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold mb-1">Maximum Error Margin</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold mb-1">Maximum Percentage of Mistakes</p>
                 <p className="text-3xl font-bold">15%</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your total errors must not exceed 15% of the total words in the passage.
-                  For a 350-word passage that means a maximum of <strong>53 errors</strong>.
+                  Your total mistakes must not exceed 15% of the total words in the passage.
+                  For a 350-word passage that means a maximum of <strong>52.5 mistakes</strong>.
                 </p>
               </div>
               <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg flex items-start gap-3">
@@ -136,67 +131,103 @@ export default function App() {
                 <div>
                   <p className="font-bold text-emerald-700">Pass / Fail Condition</p>
                   <p className="text-emerald-600/90 text-sm mt-1">
-                    To <strong>PASS</strong>, your total error score must be <strong>within the 15% limit</strong>.
+                    To <strong>PASS</strong>, your total mistake score must be <strong>within the 15% limit</strong>.
                     If you exceed this limit, the result will be a <strong>FAIL</strong>.
-                    You will be shown your result at the end of each attempt.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Error type rules */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-md border-red-500/20">
-              <CardHeader className="bg-red-500/5 pb-4 border-b border-red-500/10">
-                <CardTitle className="text-lg text-red-600 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  Full Mistakes (Penalty: 1.0)
-                </CardTitle>
+          {/* Error type rules — 3 cards */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Full Mistakes */}
+          <Card className="shadow-md border-red-500/20">
+              <CardHeader className="bg-red-500/5 py-3 px-6 border-b border-red-500/10">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
+                  <div>
+                    <p className="font-bold text-red-600 text-base leading-tight">Full Mistakes</p>
+                    <p className="text-xs text-red-500 font-normal">Penalty: 1 per mistake</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-6 space-y-4 text-sm leading-relaxed">
                 <div>
-                  <span className="font-bold text-foreground">1. Omission:</span> A word present in the original text is skipped entirely.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the quick fox" <br /><em>Typed:</em> "the fox" (skipped 'quick')</p>
+                  <span className="font-bold text-foreground">1. Omission:</span> A word is skipped entirely.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the quick fox"<br /><em>Typed:</em> "the fox"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">2. Addition:</span> Typing an extra word not in the original text.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the fox" <br /><em>Typed:</em> "the fast fox" (added 'fast')</p>
+                  <span className="font-bold text-foreground">2. Addition:</span> An extra word is typed.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the fox"<br /><em>Typed:</em> "the fast fox"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">3. Substitution:</span> Typing a completely wrong word instead of the correct one.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the fox" <br /><em>Typed:</em> "the dog"</p>
+                  <span className="font-bold text-foreground">3. Substitution:</span> A completely wrong word is typed.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the fox"<br /><em>Typed:</em> "the dog"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">4. Incomplete:</span> Typing a word but leaving it severely truncated.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "government" <br /><em>Typed:</em> "gov"</p>
+                  <span className="font-bold text-foreground">4. Incomplete:</span> A word is severely truncated.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "government"<br /><em>Typed:</em> "gov"</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-md border-amber-500/20">
-              <CardHeader className="bg-amber-500/5 pb-4 border-b border-amber-500/10">
-                <CardTitle className="text-lg text-amber-600 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  Half Mistakes (Penalty: 0.5)
-                </CardTitle>
+            {/* Half Mistakes */}
+          <Card className="shadow-md border-amber-500/20">
+              <CardHeader className="bg-amber-500/5 py-3 px-6 border-b border-amber-500/10">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-bold text-amber-600 text-base leading-tight">Half Mistakes</p>
+                    <p className="text-xs text-amber-500 font-normal">Penalty: 0.5 per mistake</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-6 space-y-4 text-sm leading-relaxed">
                 <div>
-                  <span className="font-bold text-foreground">1. Capitalisation:</span> Correct word but wrong case.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "India" <br /><em>Typed:</em> "india"</p>
+                  <span className="font-bold text-foreground">1. Capitalisation:</span> Correct word, wrong case.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "India"<br /><em>Typed:</em> "india"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">2. Spacing Error:</span> Merging two words or splitting one word.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "my name" → <em>Typed:</em> "myname"<br /><em>Ref:</em> "have" → <em>Typed:</em> "h ave"</p>
+                  <span className="font-bold text-foreground">2. Spacing Error:</span> Two words merged or one split.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "my name"<br /><em>Typed:</em> "myname"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">3. Transposition:</span> Swapping the order of two adjacent words.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "is very" <br /><em>Typed:</em> "very is"</p>
+                  <span className="font-bold text-foreground">3. Transposition:</span> Two adjacent words swapped.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "is very"<br /><em>Typed:</em> "very is"</p>
                 </div>
                 <div>
-                  <span className="font-bold text-foreground">4. Punctuation:</span> Missing, adding, or substituting a punctuation mark when the word itself was typed.
-                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "Hello, world" <br /><em>Typed:</em> "Hello world" (missing comma)</p>
+                  <span className="font-bold text-foreground">4. Punctuation:</span> A punctuation mark is missing or wrong when the word itself was typed.
+                  <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "Hello, world"<br /><em>Typed:</em> "Hello world"</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Exceptional Case */}
+          <Card className="shadow-md border-purple-500/20">
+              <CardHeader className="bg-purple-500/5 py-3 px-6 border-b border-purple-500/10">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 shrink-0 text-purple-600" />
+                  <div>
+                    <p className="font-bold text-purple-600 text-base leading-tight">Exceptional Case</p>
+                    <p className="text-xs text-purple-500 font-normal">Penalty: 3 per occurrence</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-3 text-sm leading-relaxed">
+                <div>
+                  <span className="font-bold text-foreground">Middle Word Omission with Merge:</span>
+                  <span className="text-muted-foreground"> When a middle word is deleted and the surrounding words merge together.</span>
+                </div>
+                <div className="bg-secondary/50 p-3 rounded text-muted-foreground space-y-1">
+                  <div><em>Ref:</em> &ldquo;my name is&rdquo;</div>
+                  <div><em>Typed:</em> &ldquo;myis&rdquo;</div>
+                  <div className="pt-1 border-t border-border/50 mt-1">
+                    <div>— Omit &ldquo;name&rdquo; &nbsp;= 1 mistake</div>
+                    <div>— &ldquo;myis&rdquo; ≠ &ldquo;my&rdquo; &nbsp;= 1 mistake</div>
+                    <div>— &ldquo;myis&rdquo; ≠ &ldquo;is&rdquo; &nbsp;&nbsp;= 1 mistake</div>
+                  </div>
+                  <div className="pt-1"><strong>Total = 3 mistakes</strong></div>
                 </div>
               </CardContent>
             </Card>
@@ -229,9 +260,7 @@ export default function App() {
                 onClick={() => { setSelectedPassageId(p.id); setAppState('typing'); }}
               >
                 <CardContent className="p-6 text-center space-y-2">
-                  <h3 className="font-bold text-lg">
-                    {p.id === 1 ? '★ Paragraph 1 (Test)' : `Paragraph ${p.id}`}
-                  </h3>
+                  <h3 className="font-bold text-lg">Paragraph {p.id}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">{p.title}</p>
                 </CardContent>
               </Card>
@@ -251,10 +280,10 @@ export default function App() {
   if (appState === 'results' && result) {
     const timeUsed = DURATION_SECONDS - timeLeft;
     const finalWpm = engineRef.current?.getWPM() ?? 0;
-    // Pass/fail: errors only
     const hasPassed = result.totalErrorScore <= result.errorThreshold;
+    // Cap at 100% — error score can't meaningfully exceed total words
     const errorPct = result.totalRef > 0
-      ? Math.round((result.totalErrorScore / result.totalRef) * 100 * 10) / 10
+      ? Math.min(100, Math.round((result.totalErrorScore / result.totalRef) * 100 * 10) / 10)
       : 0;
 
     return (
@@ -269,14 +298,13 @@ export default function App() {
             </h2>
             <p className="text-lg font-medium opacity-90">
               {hasPassed
-                ? 'Congratulations! Your error score is within the 15% limit.'
-                : 'Your error score exceeded the 15% limit. Keep practicing!'}
+                ? 'Congratulations! Your mistake score is within the 15% limit.'
+                : 'Your mistake score exceeded the 15% limit. Keep practicing!'}
             </p>
           </div>
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {/* WPM — informational only, not pass/fail */}
             <Card className="bg-secondary/50">
               <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
                 <Zap className="w-6 h-6 mb-1 text-primary" />
@@ -321,13 +349,13 @@ export default function App() {
               </CardContent>
             </Card>
 
-            {/* Total Mistakes card — shows % big, number below */}
+            {/* Maximum Mistake Percentage card */}
             <Card className={result.totalErrorScore <= result.errorThreshold ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-red-500/5 border-red-500/30'}>
               <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-0">
-                <p className="text-sm uppercase tracking-wider font-bold">Total Mistakes</p>
+                <p className="text-sm uppercase tracking-wider font-bold">Maximum Mistake Percentage</p>
                 <p className="text-4xl font-extrabold leading-none mt-1">{errorPct}%</p>
-                <p className="text-base font-semibold mt-1">{result.totalErrorScore.toFixed(1)} errors</p>
-                <p className="text-xs opacity-60 mt-0.5">Limit (15%): {result.errorThreshold}</p>
+                <p className="text-base font-semibold mt-1">{result.totalErrorScore.toFixed(1)} mistakes</p>
+                <p className="text-xs opacity-60 mt-0.5">Maximum mistake percentage: {result.errorThreshold}</p>
               </CardContent>
             </Card>
           </div>
@@ -404,17 +432,16 @@ export default function App() {
           </div>
         </div>
 
-        {/* Reference panel — 65% of remaining height */}
+        {/* Reference panel — plain black text, no colours, 65% height */}
         <Card className="shadow-md border-border/50 bg-secondary/30 shrink-0" style={{ flex: '6 1 0', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <CardContent id="ref-container" className="p-4 overflow-y-auto custom-scrollbar flex-1">
-            <div
-              className="text-lg leading-relaxed select-none font-medium tracking-wide"
-              dangerouslySetInnerHTML={{ __html: referenceHTML }}
-            />
+          <CardContent className="p-4 overflow-y-auto custom-scrollbar flex-1" ref={refContainerRef}>
+            <p className="text-lg leading-relaxed select-none font-medium tracking-wide text-foreground whitespace-pre-wrap">
+              {currentPassage.text}
+            </p>
           </CardContent>
         </Card>
 
-        {/* Typing area — 25% of remaining height */}
+        {/* Typing area — 25% height */}
         <textarea
           ref={textAreaRef}
           value={typedText}

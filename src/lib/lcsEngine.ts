@@ -498,14 +498,11 @@ export class LCSEngine {
       }
 
       // ── Punctuation-only differences → half mistakes ─────────────────────
-      // Only count punctuation half-errors when there were TYPED words in the block
-      // (substitution / addition case). Pure omissions should NOT generate punctuation
-      // half-errors — the words were never typed, so the punctuation was never typed either.
-      const hasPureOmission = normalDel.length > 0 && insBlock.length === 0;
-      if (!isTrailing && !hasPureOmission) {
-        // Pair del_punct and ins_punct position-by-position:
-        //   same count, different token = substitution (1 half mistake each)
-        //   net excess in either direction = missing/extra (1 half mistake each)
+      // Punctuation is only a half-error when the WORD itself was correctly matched
+      // (i.e., the block has NO deleted words — it is a pure punctuation difference).
+      // If ANY reference words were deleted (omitted/substituted), their punctuation
+      // errors are absorbed into the word-level full/half errors — never counted separately.
+      if (!isTrailing && normalDel.length === 0) {
         const nPairs = Math.min(delPunct.length, insPunct.length);
         const nSubst = Array.from({ length: nPairs }, (_, k) => (delPunct[k] !== insPunct[k] ? 1 : 0) as number)
           .reduce((a: number, b: number) => a + b, 0);
@@ -540,9 +537,9 @@ export class LCSEngine {
         if (diff[k].status === 'delete') {
           const refToken = diff[k].ref!;
           if (PUNCT_TOKENS.has(refToken)) {
-            // Punctuation in a pure omission block → not_typed (no penalty).
-            // Half error only if there were typed words in this block (substitution/addition).
-            if (!isTrailing && !hasPureOmission) {
+            // Punctuation half-error only when no words were deleted in this block
+            // (pure punctuation difference after a matched word).
+            if (!isTrailing && normalDel.length === 0) {
               htmlParts.push({ token: refToken, html: halfErrorSpan(refToken, null, 'punctuation') });
               diffTokens.push({ ref: refToken, typed: null, status: 'half_error', errorType: 'punctuation' });
             } else {
@@ -601,7 +598,7 @@ export class LCSEngine {
     // ── Scoring ────────────────────────────────────────────────────────────
     const totalRef = this.referenceWords.length;
     const totalErrorScore = Math.round((fullMistakes + (halfMistakes * 0.5)) * 10) / 10;
-    const errorThreshold = Math.round(0.15 * totalRef);
+    const errorThreshold = 0.15 * totalRef;
     const wordAccuracy = totalRef > 0 ? Math.round(correctWords / totalRef * 1000) / 10 : 0;
 
     // Char accuracy (character-level, for legacy compat)
