@@ -117,11 +117,11 @@ export default function App() {
             <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
               <CardTitle className="text-xl text-primary">Qualifying Criteria</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 text-[12pt]">
               <div className="bg-secondary/50 p-4 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold mb-1">Maximum Percentage of Mistakes</p>
+                <p className="text-[12pt] text-muted-foreground uppercase tracking-wider font-bold mb-1">Maximum Percentage of Mistakes</p>
                 <p className="text-3xl font-bold">15%</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-[12pt] text-muted-foreground mt-1">
                   Your total mistakes must not exceed 15% of the total words in the passage.
                   For a 350-word passage that means a maximum of <strong>52.5 mistakes</strong>.
                 </p>
@@ -129,8 +129,8 @@ export default function App() {
               <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg flex items-start gap-3">
                 <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-emerald-700">Pass / Fail Condition</p>
-                  <p className="text-emerald-600/90 text-sm mt-1">
+                  <p className="font-bold text-emerald-700 text-[12pt]">Pass / Fail Condition</p>
+                  <p className="text-emerald-600/90 text-[12pt] mt-1">
                     To <strong>PASS</strong>, your total mistake score must be <strong>within the 15% limit</strong>.
                     If you exceed this limit, the result will be a <strong>FAIL</strong>.
                   </p>
@@ -152,7 +152,7 @@ export default function App() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-4 text-sm leading-relaxed">
+              <CardContent className="p-6 space-y-4 text-[12pt] leading-relaxed">
                 <div>
                   <span className="font-bold text-foreground">1. Omission:</span> A word is skipped entirely.
                   <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "the quick fox"<br /><em>Typed:</em> "the fox"</p>
@@ -183,7 +183,7 @@ export default function App() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-4 text-sm leading-relaxed">
+              <CardContent className="p-6 space-y-4 text-[12pt] leading-relaxed">
                 <div>
                   <span className="font-bold text-foreground">1. Capitalisation:</span> Correct word, wrong case.
                   <p className="text-muted-foreground mt-1 bg-secondary/50 p-2 rounded"><em>Ref:</em> "India"<br /><em>Typed:</em> "india"</p>
@@ -214,7 +214,7 @@ export default function App() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-3 text-sm leading-relaxed">
+              <CardContent className="p-6 space-y-3 text-[12pt] leading-relaxed">
                 <div>
                   <span className="font-bold text-foreground">Middle Word Omission with Merge:</span>
                   <span className="text-muted-foreground"> When a middle word is deleted and the surrounding words merge together.</span>
@@ -388,7 +388,7 @@ export default function App() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-6 px-6 overflow-y-auto max-h-[40vh] custom-scrollbar">
-                <div className="text-base leading-relaxed font-medium tracking-wide" dangerouslySetInnerHTML={{ __html: result.highlightedHTML }} />
+                <div className="text-[12pt] leading-relaxed font-medium tracking-wide" dangerouslySetInnerHTML={{ __html: result.highlightedHTML }} />
               </CardContent>
             </Card>
             <Card className="shadow-md border-border/50 bg-secondary/30 flex flex-col">
@@ -398,7 +398,7 @@ export default function App() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-6 px-6 overflow-y-auto max-h-[40vh] custom-scrollbar">
-                <div className="text-base leading-relaxed font-medium tracking-wide" dangerouslySetInnerHTML={{ __html: result.typedHTML || result.highlightedHTML }} />
+                <div className="text-[12pt] leading-relaxed font-medium tracking-wide" dangerouslySetInnerHTML={{ __html: result.typedHTML || result.highlightedHTML }} />
               </CardContent>
             </Card>
           </div>
@@ -435,7 +435,7 @@ export default function App() {
         {/* Reference panel — plain black text, no colours, 65% height */}
         <Card className="shadow-md border-border/50 bg-secondary/30 shrink-0" style={{ flex: '6 1 0', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <CardContent className="p-4 overflow-y-auto custom-scrollbar flex-1" ref={refContainerRef}>
-            <p className="text-lg leading-relaxed select-none font-medium tracking-wide text-foreground whitespace-pre-wrap">
+            <p className="text-[12pt] leading-relaxed select-none font-medium tracking-wide text-foreground whitespace-pre-wrap">
               {currentPassage.text}
             </p>
           </CardContent>
@@ -447,7 +447,7 @@ export default function App() {
           value={typedText}
           onChange={handleInput}
           style={{ flex: '2.5 1 0', minHeight: 0 }}
-          className="w-full p-4 bg-background border-2 border-border rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none text-lg leading-relaxed shadow-sm custom-scrollbar shrink-0"
+          className="w-full p-4 bg-background border-2 border-border rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none text-[12pt] leading-relaxed shadow-sm custom-scrollbar shrink-0"
           placeholder="Begin typing the reference text here..."
           spellCheck="false"
           autoComplete="off"
