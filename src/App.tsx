@@ -4,8 +4,7 @@ import { LCSEngine, type EvalResult } from './lib/lcsEngine';
 import { passages } from './lib/passages';
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card';
 import { Button } from './components/ui/button';
-import { Badge } from './components/ui/badge';
-import { CheckCircle2, AlertCircle, Zap, Clock, AlertTriangle, ChevronRight, XCircle, Target } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Zap, AlertTriangle, ChevronRight, XCircle, Target } from 'lucide-react';
 
 const DURATION_SECONDS = 600; // 10 minutes
 
