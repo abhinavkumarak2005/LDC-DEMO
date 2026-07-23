@@ -438,7 +438,7 @@ function ResultsPage({ result, finalWpm, onPracticeAgain }: any) {
         </div>
 
         <div className="flex gap-4 justify-center text-sm flex-wrap">
-          {[['bg-emerald-500','Correct'],['bg-red-500','Full mistake'],['bg-amber-500','Half mistake'],['bg-gray-400 opacity-50','Not typed']].map(([cls, lbl]) => (
+          {[['bg-emerald-500','Correct'],['bg-red-500','Full mistake'],['bg-amber-500','Half mistake']].map(([cls, lbl]) => (
             <span key={lbl} className="flex items-center gap-1">
               <span className={`inline-block w-3 h-3 rounded-full ${cls}`}></span>
               <span className="text-muted-foreground">{lbl}</span>
